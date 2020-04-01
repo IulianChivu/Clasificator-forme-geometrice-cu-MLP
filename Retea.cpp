@@ -1,76 +1,97 @@
 #include<iostream>
-#include <random>
+
 using namespace std;
 
-class Retea{
-	private:
-		float **w, **b;
-		int *dim_layer;
+class Nod{
+	
+
 	public:
-		Retea(int *dim_layer){ //dim_layer = vector a carui dimensiune reprezinta nr. de straturi, iar fiecare valoare din acesta reprezinta nr de neuroni de pe stratul respectiv
-			this->dim_layer = dim_layer;
-			//alocare spatiu weights and biases:
-			for(int i=1;i<*dim_layer;i++){
-				w = new float*[dim_layer[i]]; //nr. de linii
-				for(int l=0;l<i;l++) w[l] = new float[dim_layer[i-1]];//nr. de coloane
-				
-				b = new float*[dim_layer[i]]; //nr. de linii
-				for(int l=0;l<i;l++) b[l] = new float[1];//nr. de coloane
-			}
-			//initializare weights and biases:
-			for(int i=1;i<*dim_layer;i++){
-				for(int l=0;l<dim_layer[i];l++){
-					for(int j=0;j<dim_layer[i-1];j++){
-						w[l][j] = ((-1) + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(1-(-1)))))*0.01;
-						b[l][1] = 0;
-					}
-				}
-			}
-		}
+	float w, b;
+	Nod *next; //pointer spre urmatorul layer de noduri
+	Nod *prev; //pointer spre stratul anterior(Pentru backwards prop)
 
-		~Retea(){
-			//cout<<"dest"<<endl;
-		}
+	Nod(){
+		w=0.93; //o sa le initializez random
+		b=0;
+		next=NULL;
+		prev=NULL;
+	}
 
-		void coutwandb(){
-			for(int i=1;i<*dim_layer;i++){
-				for(int l=0;l<dim_layer[i];l++){
-					for(int j=0;j<dim_layer[i-1];j++){
-						cout<<w[l][j]<<" ";
-					}
-					cout<<endl;
-				}
-			}
-			
-			for(int i=1;i<*dim_layer;i++){
-				for(int l=0;l<dim_layer[i];l++){
-					for(int j=0;j<1;j++){
-						cout<<b[l][j]<<" ";
-					}
-					cout<<endl;
-				}
+};
+
+class Retea{
+	int n; //nr straturi ascunse
+	int *v; //vector cu dim fiecarui strat de noduri
+	Nod *start; //primul nod din retea
+	
+	public:
+	Retea(){
+		cout<<"Introduceti nr. de straturi ascunse: ";
+		cin>>n;
+		v = new int[n+1];
+
+		for(int i=0;i<n;i++){
+			cout<<"Introduceti nr. de noduri pentru stratul "<<i+1<<": ";
+			cin>>v[i];
+		}
+		cout<<"Introduceti nr. nodurilor de iesire: ";
+		cin>>v[n];
+		
+		cout<<"\nStructura retea: strat intrare -> ";
+		for(int i=0;i<n+1;i++){
+			cout<<v[i]<<" -> ";
+		}
+		cout<<"Iesire"<<endl;
+		
+		start = NULL;
+	}
+
+	void initializare(){
+		Nod *nod_nou, *tmp;
+		for(int i=0;i<n+1;i++){
+			nod_nou = new Nod[v[i]];
+			if(start == NULL) start = nod_nou;
+			else{
+				tmp = start;
+				while(tmp->next!=NULL) tmp=tmp->next;
+				tmp->next=nod_nou;
+				nod_nou->prev=tmp;
 			}
 		}
+	}
+
+	void verificare_afisare(){
+		Nod *tmp=start;
+		while(tmp!=NULL){
+			for(int i=0;i<n+1;i++){		
+			cout<<"ponderi stratul nr "<<i+1<<": ";	
+				for(int j=0;j<v[i];j++){
+					cout<<tmp[j].w<<" ";
+				}
+				tmp=tmp->next;
+				cout<<endl;
+			}
+		}
+	}
+
+	~Retea(){
+		delete []v;
+	}
 };
 
 
 
-int main(){
-	int *layer;
-	int nr;
-	cout<<"introduceti nr de straturi ascunse nr straturi ascunse:";
-	cin>>nr;
-	layer = new int[nr];
-	
-	for(int i=0; i<nr; i++){
-		cout<<"nr neuroni strat "<<i+1<<":";
-		cin>>layer[i];
-	}
 
-	Retea r1(layer);
-	r1.coutwandb();
+
+int main(){
 	
+	cout<<endl;
+	Retea r;
+	r.initializare();
+	cout<<endl;
+	r.verificare_afisare();
 
 	return 0;
 }
+
 
