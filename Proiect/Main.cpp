@@ -1,8 +1,13 @@
 #include<iostream>
 #include<random>
 using namespace std;
-int intrare[784][100]; // 784(28x28) -> pixeli, 100 -> fotografi(learning set) 
-int X = 4; //nr. de pixeli la intrarea in retea (784 normal, dar pentru verificare am folosit 4)
+double X[4][10] = {
+		{0,1,0,1,0,1,0,1,0,1},
+		{0,0,1,1,0,0,1,1,0,0},
+		{0,0,0,0,1,1,1,1,0,0},
+		{0,0,0,0,0,0,0,0,1,1},
+}; //intrarea in retea(trainig set) 784(28x28) -> pixeli, 100 -> fotografi(learning set) 
+int dim_vect_intrare = sizeof(X) / sizeof(X[0]); //nr. de pixeli la intrarea in retea (784 normal, dar pentru verificare am folosit 4)
 
 class Strat {
 	double** w; //weights
@@ -18,6 +23,10 @@ public:
 		neuroni = 0;
 		next = NULL;
 		prev = NULL;
+	}
+
+	double sigmoid(double Z) {
+		return (double)1 / (1 + exp(-Z));
 	}
 
 	Strat* creare(Strat* prim) {
@@ -52,11 +61,11 @@ public:
 				//alocare weights
 				nou->w = new double* [nou->neuroni];
 				for (int j = 0; j < nou->neuroni; ++j) {
-					nou->w[j] = new double[X];
+					nou->w[j] = new double[dim_vect_intrare];
 				}
 				//initializare weights
 				for (int j = 0; j < nou->neuroni; j++) {
-					for (int k = 0; k < X; k++) {
+					for (int k = 0; k < dim_vect_intrare; k++) {
 						nou->w[j][k] = distribution(generator);
 					}
 				}
@@ -123,7 +132,7 @@ public:
 				//caz particular primul strat
 				if (tmp == prim) {
 					for (int i = 0; i < tmp->neuroni; i++) {
-						for (int j = 0; j < X; j++) {
+						for (int j = 0; j < dim_vect_intrare; j++) {
 							cout << tmp->w[i][j] << " ";
 						}
 						cout << endl;
@@ -174,7 +183,10 @@ public:
 	}
 };
 
+
+
 int main() {
+	double Y[10] = { 0,0,0,1,0,1,1,0,0,1 }; //training set expected output
 	Strat* prim = NULL;
 
 	prim = prim->creare(prim);
