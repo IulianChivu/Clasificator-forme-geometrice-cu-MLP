@@ -1,18 +1,12 @@
 #include<iostream>
 #include<random>
 using namespace std;
-double X[4][10] = {
-		{0,1,0,1,0,1,0,1,0,1},
-		{0,0,1,1,0,0,1,1,0,0},
-		{0,0,0,0,1,1,1,1,0,0},
-		{0,0,0,0,0,0,0,0,1,1},
-}; //intrarea in retea(trainig set) 784(28x28) -> pixeli, 100 -> fotografi(learning set) 
-int dim_vect_intrare = sizeof(X) / sizeof(X[0]); //nr. de pixeli la intrarea in retea (784 normal, dar pentru verificare am folosit 4)
 
 class Strat {
 	double** w; //weights
 	double* b; //biases
 	int neuroni; //stocheaza nr. de neuroni de pe stratul curent
+	double** Z; //Z = w*X + b (logistic regression); A = sigmoid(Z);
 	Strat* next;
 	Strat* prev;
 
@@ -21,6 +15,7 @@ public:
 		w = NULL;
 		b = NULL;
 		neuroni = 0;
+		Z = NULL;
 		next = NULL;
 		prev = NULL;
 	}
@@ -29,7 +24,7 @@ public:
 		return (double)1 / (1 + exp(-Z));
 	}
 
-	Strat* creare(Strat* prim) {
+	Strat* creare(Strat* prim, int dim_vect_intrare) {
 		Strat* nou, * tmp;
 		int n;
 		default_random_engine generator;
@@ -119,7 +114,7 @@ public:
 		}
 	}
 
-	void afisare_w(Strat* prim) {
+	void afisare_w_b(Strat* prim, int dim_vect_intrare) {
 		Strat* tmp;
 		tmp = prim;
 		int counter = 1;
@@ -174,6 +169,11 @@ public:
 			delete[]prim->w;
 			//stergere biases
 			delete[]prim->b;
+			//stergere Z
+			for (int i = 0; i < prim->neuroni; i++) {
+				delete[]prim->Z[i];
+			}
+			delete[]prim->Z;
 			//stergere strat
 			delete prim;
 			prim = tmp;
@@ -181,20 +181,103 @@ public:
 		cout << "Lista de straturi a fost stearsa!" << endl;
 		return NULL;
 	}
+
+	Strat* forward(Strat* prim, int n, int m, double* X) {
+		/*for (int i = 0; i < n; i++) {
+			for (int j = 0; j < m; j++) {
+				cout << *((X + i * m) + j) << " ";
+			}
+			cout << endl;
+		}*/ //test afisare corecta X
+
+		Strat* tmp;
+		tmp = prim;
+		if (prim == NULL) {
+			cout << "Lista de straturi este goala!" << endl;
+		}
+		else {
+			while (tmp != NULL) {
+				//alocare spatiu Z
+				tmp->Z = new double* [tmp->neuroni];
+				for (int i = 0; i < tmp->neuroni; i++) {
+					tmp->Z[i] = new double[m];
+				}
+				//calcul Z
+				for (int i = 0; i < tmp->neuroni; i++) {
+					for (int j = 0; j < m; j++) {
+						tmp->Z[i][j] = 0;
+						for (int k = 0; k < tmp->neuroni; k++) {
+							//caz particular primul strat
+							if (prim == tmp) {
+								tmp->Z[i][j] += tmp->w[i][k] * (*((X + k * m) + j));
+							}
+							//pentru restul de noduri
+							else {
+								tmp->Z[i][j] += tmp->w[i][k] * tmp->prev->Z[k][j];
+							}
+						}
+					}
+				}
+				//calcul A
+				for (int i = 0; i < tmp->neuroni; i++) {
+					for (int j = 0; j < m; j++) {
+						tmp->Z[i][j] = tmp->sigmoid(tmp->Z[i][j]);
+					}
+				}
+				tmp = tmp->next;
+			}
+		}
+		return prim;
+	}
+
+	void afisare_A(Strat* prim, int m) {
+		Strat* tmp;
+		tmp = prim;
+		int counter = 1;
+		if (prim == NULL) {
+			cout << "Lista de straturi este goala!" << endl;
+		}
+		else {
+			while (tmp != NULL) {
+				cout << "Z" << counter << ":" << endl;
+				for (int i = 0; i < tmp->neuroni; i++) {
+					for (int j = 0; j < m; j++) {
+						cout << tmp->Z[i][j] << " ";
+					}
+					cout << endl;
+				}
+				counter++;
+				tmp = tmp->next;
+			}
+		}
+	}
+
 };
 
-
-
 int main() {
+	double X[4][10] = {
+		{0,1,0,1,0,1,0,1,0,1},
+		{0,0,1,1,0,0,1,1,0,0},
+		{0,0,0,0,1,1,1,1,0,0},
+		{0,0,0,0,0,0,0,0,1,1},
+	}; //intrarea in retea(trainig set) 784(28x28) -> pixeli, 100 -> fotografi(learning set) 
 	double Y[10] = { 0,0,0,1,0,1,1,0,0,1 }; //training set expected output
+
+	int dim_vect_intrare = sizeof(X) / sizeof(X[0]); //nr. de pixeli la intrarea in retea (784 normal, dar pentru verificare am folosit 4)
+	int m = sizeof(X[0]) / sizeof(X[0][0]); //m = numarul de exemple pentru antrenarea retelei(nr de poze)
+
 	Strat* prim = NULL;
 
-	prim = prim->creare(prim);
+	prim = prim->creare(prim, dim_vect_intrare);
 	cout << endl;
 	prim->afisare(prim);
 	cout << endl;
 
-	prim->afisare_w(prim);
+	prim->afisare_w_b(prim, dim_vect_intrare);
+	cout << endl;
+
+	prim->forward(prim, dim_vect_intrare, m, (double*)X);
+	prim->afisare_A(prim, m);
 	cout << endl;
 
 	prim = prim->stergere(prim);
