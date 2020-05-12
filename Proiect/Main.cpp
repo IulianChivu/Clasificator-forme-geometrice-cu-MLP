@@ -199,7 +199,7 @@ public:
 			while (tmp != NULL) {
 				//alocare spatiu Z
 				tmp->Z = new double* [tmp->neuroni];
-				for (int i = 0; i < tmp->neuroni; i++) {
+				for (int i = 0; i < tmp->neuroni; ++i) {
 					tmp->Z[i] = new double[m];
 				}
 				//calcul Z
@@ -239,7 +239,7 @@ public:
 		}
 		else {
 			while (tmp != NULL) {
-				cout << "Z" << counter << ":" << endl;
+				cout << "A" << counter << ":" << endl;
 				for (int i = 0; i < tmp->neuroni; i++) {
 					for (int j = 0; j < m; j++) {
 						cout << tmp->Z[i][j] << " ";
@@ -283,8 +283,90 @@ public:
 			for (int i = 0; i < m; i++) {
 				sum += lnA[i];
 			}
+			delete[]lnA;
+			delete[]lnA_1;
 			return ((double)-1/m) * sum;
 		}
+	}
+
+	Strat* backward(Strat* prim, double* X, double* Y, int m, int n) {
+		double** dZ = NULL;
+		double** dw = NULL;
+		double* db = NULL;
+		double** dA = NULL;
+		Strat* tmp;
+		tmp = prim;
+		if (prim == NULL) {
+			cout << "Lista de straturi este goala!" << endl;
+		}
+		else {
+			while (tmp->next != NULL) {
+				tmp = tmp->next;// pentru a ajunge pe ultimul strat
+			}
+			while (tmp->prev != NULL) {
+				//alocare spatiu derivate
+				dZ = new double* [tmp->neuroni];
+				for (int i = 0; i < tmp->neuroni; ++i) {
+					dZ[i] = new double[m];
+				}
+
+				dw = new double* [tmp->neuroni];
+				for (int i = 0; i < tmp->neuroni; ++i) {
+					if (tmp == prim) {
+						dw[i] = new double[n];
+					}
+					else {
+						dw[i] = new double[tmp->prev->neuroni];
+					}
+				}
+
+				db = new double[tmp->neuroni];
+
+				if (tmp == prim) {
+					dA = new double* [n];
+					for (int i = 0; i < n; ++i) {
+						dA[i] = new double[m];
+					}
+				}
+				else {
+					dA = new double* [tmp->prev->neuroni];
+					for (int i = 0; i < tmp->prev->neuroni; ++i) {
+						dA[i] = new double[m];
+					}
+				}
+
+				//calcul derivate
+				if (tmp->next == NULL) { //caz particular ultimul strat
+					for (int i = 0; i < tmp->neuroni; i++) {
+						for (int j = 0; j < m; j++) {
+							dZ[i][j] = Z[i][j] - Y[j];
+						}
+					}
+				}
+				else {
+					for (int i = 0; i < tmp->neuroni; i++) {
+						for (int j = 0; j < m; j++) {
+							dZ[i][j] = Z[i][j] - dA[i][j];
+						}
+					}
+				}
+
+				if (tmp == prim) { //caz particular primul strat
+					for (int i = 0; i < tmp->neuroni; i++) {
+						for (int j = 0; j < n; j++) {
+							for (int k = 0; k < tmp->neuroni; i++) {
+								//dw[i][j] +=  dZ[i][k] + (*((X + k * m) + j));
+							}
+						}
+					}
+				}
+				
+
+				tmp = tmp->prev;
+			}
+		}
+
+		return prim;
 	}
 
 };
@@ -323,6 +405,9 @@ int main() {
 	//calcul cost
 	Cost = prim->cost_function(prim, Y, m);
 	cout << Cost << endl;
+
+	//etapa backward
+	prim->backward(prim, (double*)X, Y, m, dim_vect_intrare);
 
 	//dezalocare memorie
 	prim = prim->stergere(prim);
