@@ -252,6 +252,41 @@ public:
 		}
 	}
 
+	double cost_function(Strat* prim, double* Y, int m) {
+		Strat* tmp;
+		tmp = prim;
+		double *lnA = new double[m];
+		double *lnA_1 = new double[m];
+		double sum=0;
+		if (prim == NULL) {
+			cout << "Lista de straturi este goala!" << endl;
+			return 0;
+		}
+		else {
+			while (tmp->next != NULL) {
+				tmp = tmp->next;// pentru a ajunge pe ultimul strat
+			}
+			
+			for (int i = 0; i < tmp->neuroni; i++) {
+				for (int j = 0; j < m; j++) {
+					lnA[j] = log(tmp->Z[i][j]);
+					lnA_1[j] = log(1 - tmp->Z[i][j]);
+				}
+			}
+			for (int i = 0; i < m; i++) {
+				lnA[i] = lnA[i] * Y[i];
+				lnA_1[i] = lnA_1[i] * (1 - Y[i]);
+			}
+			for (int i = 0; i < m; i++) {
+				lnA[i] = lnA[i] + lnA_1[i];
+			}
+			for (int i = 0; i < m; i++) {
+				sum += lnA[i];
+			}
+			return ((double)-1/m) * sum;
+		}
+	}
+
 };
 
 int main() {
@@ -266,20 +301,30 @@ int main() {
 	int dim_vect_intrare = sizeof(X) / sizeof(X[0]); //nr. de pixeli la intrarea in retea (784 normal, dar pentru verificare am folosit 4)
 	int m = sizeof(X[0]) / sizeof(X[0][0]); //m = numarul de exemple pentru antrenarea retelei(nr de poze)
 
-	Strat* prim = NULL;
+	double Cost=0; //erroare medie pentru toate exemplele de antrenare
 
+	Strat* prim = NULL; //pointer catre primul strat din retea
+
+	//creare retea + afisare functionare corecta
 	prim = prim->creare(prim, dim_vect_intrare);
 	cout << endl;
 	prim->afisare(prim);
 	cout << endl;
 
+	//afisare ponderi
 	prim->afisare_w_b(prim, dim_vect_intrare);
 	cout << endl;
 
+	//etapa forward
 	prim->forward(prim, dim_vect_intrare, m, (double*)X);
 	prim->afisare_A(prim, m);
 	cout << endl;
 
+	//calcul cost
+	Cost = prim->cost_function(prim, Y, m);
+	cout << Cost << endl;
+
+	//dezalocare memorie
 	prim = prim->stergere(prim);
 	prim->afisare(prim);
 
