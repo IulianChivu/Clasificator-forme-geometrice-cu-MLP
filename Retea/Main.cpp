@@ -404,7 +404,7 @@ int main() {
 
 	//calcul cost
 	Cost = prim->cost_function(prim, Y, m);
-	cout << Cost << endl;
+	cout << "Cost function:\n" << Cost << endl; cout << endl;
 
 	//etapa backward
 	prim->backward(prim, (double*)X, Y, m, dim_vect_intrare);
